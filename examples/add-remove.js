@@ -1,5 +1,6 @@
 require('file?name=[name].[ext]!./add-remove.html');
 require('./add-remove.scss');
+
 let queryString = require('query-string');
 let Millions = require('millions');
 let canvas = document.querySelector('canvas');
@@ -44,6 +45,7 @@ window.requestAnimationFrame(function onFrame() {
 });
 
 // set up control listeners
+require('babel-polyfill'); // literally only needed to iterator over nodeList
 for (let btn of document.querySelectorAll('.color-button')) {
     let color = btn.getAttribute('data-color');
     btn.style.backgroundColor = color;

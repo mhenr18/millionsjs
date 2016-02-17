@@ -1,5 +1,3 @@
-require('babel-polyfill');
-
 const Color = require('./Color');
 const Line = require('./Line');
 const Chunk = require('./Chunk');
