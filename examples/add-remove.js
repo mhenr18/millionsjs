@@ -11,11 +11,11 @@ let currentColor = null;
 let tempLine = null;
 
 let getTimestamp = null;
-if (window.performance.now) {
+if (window.performance && window.performance.now) {
     console.log("Using high performance timer");
     getTimestamp = function() { return window.performance.now(); };
 } else {
-    if (window.performance.webkitNow) {
+    if (window.performance && window.performance.webkitNow) {
         console.log("Using webkit high performance timer");
         getTimestamp = function() { return window.performance.webkitNow(); };
     } else {
