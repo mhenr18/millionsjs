@@ -1,0 +1,30 @@
+
+millions.js design
+==================
+
+
+Millions stores lines as an ordered list of chunks. Each chunk can contain up
+to 8192 lines. Chunks can be rendered using a single draw call.
+
+
+Why are chunks limited to 8192 lines?
+-------------------------------------
+
+Millions has a strict draw ordering policy, where lines with lower handles will
+be rendered below those with higher handles. This would be an ideal use case for
+depth buffering, however WebGL only guarantees that the depth buffer will have
+at least 16 bits of resolution (which isn't enough to deal with potentially
+millions of lines).
+
+This means that Millions can't use depth buffering and must instead present line
+vertices to the GPU in handle order.
+
+In the ideal world, we could keep all line vertexes in a single buffer (in
+order) and make a single call to render them. Of course, we don't live in an
+ideal world and the size and number of vertex buffers is limited by hardware and
+platform constraints. The relevant limitation in this case is that indices can
+only be 16 bits. Therefore, an index buffer can only refer to at most 65536
+vertices.
+
+With 8 vertices per line (in a fully capped case), that gives us 8192 lines per
+vertex buffer and is why chunks are limited to 8192 lines.
