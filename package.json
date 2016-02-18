@@ -2,13 +2,15 @@
   "name": "millionsjs",
   "version": "0.1.0",
   "description": "Renderer for millions of lines",
-  "main": "lib/millions.js",
+  "main": "lib/millions.min.js",
   "scripts": {
     "build": "webpack --mode=build",
     "build-examples": "webpack --mode=examples",
     "dev": "webpack --progress --colors --watch --mode=dev",
     "dev-examples": "webpack --progress --colors --watch --mode=examples",
-    "doc": "jsdoc src/  -c jsdoc.conf.json -r"
+    "doc": "jsdoc src/  -c jsdoc.conf.json -r",
+
+    "prepublish": "npm run build"
   },
   "devDependencies": {
     "babel": "~6.5",
