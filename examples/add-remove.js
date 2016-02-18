@@ -1,5 +1,6 @@
 require('file?name=[name].[ext]!./add-remove.html');
 require('./add-remove.scss');
+
 let queryString = require('query-string');
 let Millions = require('millions');
 let canvas = document.querySelector('canvas');
@@ -10,11 +11,11 @@ let currentColor = null;
 let tempLine = null;
 
 let getTimestamp = null;
-if (window.performance.now) {
+if (window.performance && window.performance.now) {
     console.log("Using high performance timer");
     getTimestamp = function() { return window.performance.now(); };
 } else {
-    if (window.performance.webkitNow) {
+    if (window.performance && window.performance.webkitNow) {
         console.log("Using webkit high performance timer");
         getTimestamp = function() { return window.performance.webkitNow(); };
     } else {
