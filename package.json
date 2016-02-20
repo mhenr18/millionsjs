@@ -10,7 +10,8 @@
     "dev-examples": "webpack --progress --colors --watch --mode=examples",
     "doc": "jsdoc src/  -c jsdoc.conf.json -r",
 
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "publish-site": "git subtree push --prefix site origin gh-pages"
   },
   "devDependencies": {
     "babel": "~6.5",
