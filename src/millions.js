@@ -3,6 +3,14 @@ const Line = require('./Line');
 const Chunk = require('./Chunk');
 const WebGLRenderer = require('./WebGLRenderer');
 
+/**
+ * @typedef LineEndpoint
+ *
+ * @property {number} x - X coordinate of the endpoint.
+ * @property {number} y - Y coordinate of the endpoint.
+ * @property {LineCapStyle} capStyle - The endpoint's cap style.
+ */
+
 const defaultOptions = {
     backgroundColor: Color.Transparent,
     pixelDensity: window.devicePixelRatio || 1
@@ -32,6 +40,17 @@ function getClosestChunkToHandle(lineHandle, chunks) {
 }
 
 export default class Millions {
+    /**
+     * @param {HTMLCanvasElement} canvas - A canvas to render into.
+     * @param {object} [options] - Optional config parameters.
+     * @param {Color} [options.backgroundColor] - The background color to use
+     *      when rendering. Defaults to transparency.
+     * @param {number} [options.pixelDensity] - The pixel density to render
+     *      with (where 2 is "Retina" and 1 is "normal"). Fractional
+     *      values are allowed, and rendering at less than native density can
+     *      allow visual quality to be sacrified for performance. Defaults to
+     *      the native pixel density supplied by the browser.
+     */
     constructor(canvas, options = {}) {
         // create an object and assign the defaults to it, before then assigning
         // any options supplied as arguments
@@ -43,14 +62,33 @@ export default class Millions {
     }
 
     /**
-     * You can provide the handle of a line that has been removed in order to
-     * re-add a line at that point (as Millions renders in draw order, this is
-     * required for undo/redo to work and behave as expected).
+     * Adds a line to the context and returns a handle to it (this handle can
+     * later be used to remove or change the line). By default, the line is
+     * given a new handle, causing it to appear on top of all other lines as
+     * Millions renders in handle order.
+     *
+     * If a line in a context has been removed, its handle can be optionally
+     * reused by the caller. This will cause the added line to appear at the
+     * same draw ordering as the old line, which makes undo/redo possible.
+     *
+     * Note that the line cannot be given a handle that has not been previously
+     * used by the context - only older handles may be reused.
+     *
+     * @param {object} params - The line's parameters.
+     * @param {LineEndpoint} params.p1 - First endpoint.
+     * @param {LineEndpoint} params.p2 - Second endpoint.
+     * @param {number} params.thickness - Thickness of the line in CSS pixels.
+     *      Note that line thicknesses scale with the camera, so the line will
+     *      appear thicker/thinner when rendered with it zoomed in/out.
+     * @param {Color} params.color - Color of the line. Transparent colors are
+     *      supported.
+     * @param {number} [params.handle] - Color of the line. Transparent colors are
+     *      supported.
      */
-    addLine(options) {
+    addLine(params) {
         const chunks = this.chunks;
 
-        let line = new Line(options);
+        let line = new Line(params);
 
         if (options.hasOwnProperty('handle')) {
             // caller wants to reuse a handle, see if we can do it
