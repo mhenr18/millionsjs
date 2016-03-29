@@ -34,11 +34,11 @@ let fpsCounterInterval = setInterval(() => {
     framesInSecond = 0;
 }, 1000);
 
-
+let lineStore = new Millions.LineStore();
 
 window.requestAnimationFrame(function onFrame() {
     ++framesInSecond;
-    mctx.render(focalPoint, zoom);
+    mctx.render(lineStore, focalPoint, zoom);
 
     window.requestAnimationFrame(onFrame);
 });
@@ -49,7 +49,7 @@ for (let y = 0; y < linesHigh; ++y) {
     for (let x = 0; x < linesWide; ++x) {
         let x1 = x * 15, y1 = y * 15;
 
-        mctx.addLine({
+        lineStore = lineStore.withLineAdded({
             p1: { x: x1,        y: y1,       capStyle: Millions.Line.CapStyles.ROUNDED },
             p2: { x: x1 + 10,   y: y1 + 10,  capStyle: Millions.Line.CapStyles.ROUNDED },
             thickness: 2,

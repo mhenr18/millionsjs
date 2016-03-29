@@ -23,8 +23,8 @@
 // also antialias those lines.
 
 export function genLine(line, pushVert, pushIndices) {
-    const x1 = line.x1, y1 = line.y1,
-          x2 = line.x2, y2 = line.y2;
+    const x1 = line.p1.x, y1 = line.p1.y,
+          x2 = line.p2.x, y2 = line.p2.y;
 
     // get a unit vector for the line (from p1 to p2)
     const dx = x2 - x1,
@@ -35,35 +35,40 @@ export function genLine(line, pushVert, pushIndices) {
         length = 0.001; // stop divides by zero
     }
 
-    const radius = line.thickness / 2;
+    const radius1 = line.p1.thickness / 2,
+          radius2 = line.p2.thickness / 2;
 
     // when we make the unit vector, make it a "line unit" where it's
-    // half as long as the line's thickness
-    const ux = (dx / length) * radius * 1.1,
-          uy = (dy / length) * radius * 1.1;
+    // half as long as the line's thickness at that endpoint
+    const u1x = (dx / length) * radius1 * 1.1,
+          u1y = (dy / length) * radius1 * 1.1,
+          u2x = (dx / length) * radius2 * 1.1,
+          u2y = (dy / length) * radius2 * 1.1;
 
     // rotate it to be normal to the line segment
-    const rx = -uy,
-          ry = ux;
+    const r1x = -u1y,
+          r1y = u1x,
+          r2x = -u2y,
+          r2y = u2x;
 
     // subtract the unit from our first point to get its outer
     // cap point, and add it to the second to get its one as well
-    const cx1 = x1 - ux,
-          cy1 = y1 - uy,
-          cx2 = x2 + ux,
-          cy2 = y2 + uy;
+    const cx1 = x1 - u1x,
+          cy1 = y1 - u1y,
+          cx2 = x2 + u2x,
+          cy2 = y2 + u2y;
 
     // with these four points, we can add/subtract the rotated unit
     // vector to get the vertex positions.
 
-    const v1i = pushVert(cx1 + rx, cy1 + ry, x1, y1, radius, line.color),
-          v2i = pushVert(x1 + rx, y1 + ry, x1, y1, radius, line.color),
-          v3i = pushVert(x2 + rx, y2 + ry, x2, y2, radius, line.color),
-          v4i = pushVert(cx2 + rx, cy2 + ry, x2, y2, radius, line.color),
-          v5i = pushVert(cx2 - rx, cy2 - ry, x2, y2, radius, line.color),
-          v6i = pushVert(x2 - rx, y2 - ry, x2, y2, radius, line.color),
-          v7i = pushVert(x1 - rx, y1 - ry, x1, y1, radius, line.color),
-          v8i = pushVert(cx1 - rx, cy1 - ry, x1, y1, radius, line.color);
+    const v1i = pushVert(cx1 + r1x, cy1 + r1y, x1, y1, radius1, line.p1.color),
+          v2i = pushVert(x1 + r1x, y1 + r1y, x1, y1, radius1, line.p1.color),
+          v3i = pushVert(x2 + r2x, y2 + r2y, x2, y2, radius2, line.p2.color),
+          v4i = pushVert(cx2 + r2x, cy2 + r2y, x2, y2, radius2, line.p2.color),
+          v5i = pushVert(cx2 - r2x, cy2 - r2y, x2, y2, radius2, line.p2.color),
+          v6i = pushVert(x2 - r2x, y2 - r2y, x2, y2, radius2, line.p2.color),
+          v7i = pushVert(x1 - r1x, y1 - r1y, x1, y1, radius1, line.p1.color),
+          v8i = pushVert(cx1 - r1x, cy1 - r1y, x1, y1, radius1, line.p1.color);
 
     // to refresh on the vertex layout:
     // 8  7    6  5

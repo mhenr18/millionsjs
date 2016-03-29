@@ -5,8 +5,7 @@ class ChunkBuffer {
     constructor(gl) {
         this.vbo = null;
         this.ibo = null;
-        this.chunkId = null;
-        this.renderStateId = null;
+        this.chunk = null;
         this.vboData = null;
         this.iboData = null;
         this.numVerts = 0;
@@ -62,28 +61,21 @@ export default class WebGLChunkBufferManager {
     getBufferForChunk(chunk, upcomingChunks) {
         // do any of the buffers in use refer to this chunk?
         let buffer = null;
-        let bufferIndex = this.usedBuffers.findIndex((b) => b.chunkId == chunk.id);
+        let bufferIndex = this.usedBuffers.findIndex((b) => b.chunk == chunk);
         if (bufferIndex != -1) {
             // yep, pull it out of the LRU
-            buffer = this.usedBuffers.splice(bufferIndex, 1)[0];
+            return this.usedBuffers.splice(bufferIndex, 1)[0];
         } else {
-            // nope, just get one and associate it with the chunk
+            // nope, just get one
             buffer = this._getBuffer(upcomingChunks);
-            buffer.renderStateId = null;
-            buffer.chunkId = chunk.id;
         }
 
         // put our buffer into the LRU in the most recently used spot
         this.usedBuffers.push(buffer);
 
-        // check the chunk's render state id, if it matches ours we're all good
-        if (buffer.renderStateId == chunk.renderStateId) {
-            return buffer;
-        }
-
         // differing render states, need to update our buffer
         this._vertGenChunk(chunk, buffer);
-        buffer.renderStateId = chunk.renderStateId;
+        buffer.chunk = chunk;
         return buffer;
     }
 
@@ -128,7 +120,7 @@ export default class WebGLChunkBufferManager {
 
             // if we can find this buffer's chunk in the upcoming ones, then
             // keep looking through the used buffers
-            if (upcomingChunks.find((c) => c.id == buffer.chunkId)) {
+            if (upcomingChunks.find((c) => c == buffer.chunk)) {
                 continue;
             }
 
@@ -143,7 +135,7 @@ export default class WebGLChunkBufferManager {
 
             // find any buffer that's associated with that chunk
             let bufferIndex = this.usedBuffers.findIndex(
-                                                (b) => b.chunkId == chunk.id);
+                                                (b) => b.chunk == chunk);
 
             return this.usedBuffers.splice(bufferIndex, 1)[0];
         }
@@ -188,7 +180,8 @@ export default class WebGLChunkBufferManager {
             }
         }
 
-        for (let line of chunk.lines) {
+        chunk.lines.__getBuffer();
+        for (let line of chunk.lines.buffer) {
             vertgen.genLine(line, pushVert, pushIndices);
         }
 

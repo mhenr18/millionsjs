@@ -1,12 +1,9 @@
+var Immy = require('immy');
 
 export default class Chunk {
 
     constructor (firstLine) {
-        this.id = Symbol('Chunk started with handle ' + firstLine.handle);
-        //this.id = 10;
-        this.lines = [ firstLine ];
-        this.renderStateId = 0;
-        this.boundingBox = null;
+        this.lines = new Immy.List([firstLine]);
     }
 
     split() {
@@ -17,106 +14,78 @@ export default class Chunk {
         let beginA = 0;
         let beginB = (this.size() / 2) | 0;
 
-        let a = new Chunk(this.lines[beginA]);
+        let a = new Chunk(null);
         a.lines = this.lines.slice(0, beginB);
 
-        let b = new Chunk(this.lines[beginB]);
+        let b = new Chunk(null);
         b.lines = this.lines.slice(beginB, this.size());
 
         return [a, b];
     }
 
     size() {
-        return this.lines.length;
+        return this.lines.size();
     }
 
     firstHandle() {
-        return this.lines[0].handle;
+        return this.lines.get(0).handle;
     }
 
     lastHandle() {
-        return this.lines[this.lines.length - 1].handle;
+        return this.lines.get(this.lines.size() - 1).handle;
     }
 
-    // fast path for just adding new lines
-    appendLine(line) {
-        this.lines.push(line);
-        this._invalidateRenderState();
+    // fast path just for inserting lines we know will sit at the end
+    withLineAppended(line) {
+        let newChunk = new Chunk(null);
+        newChunk.lines = this.lines.push(line);
+        return newChunk;
     }
 
     // slow path which can be used to insert lines at any part of the chunk
-    addLine(line) {
-        let i = 0;
-
+    withLineAdded(line) {
         // look for the first handle that's bigger than the line's handle
-        for (i = 0; i < this.lines.length; ++i) {
-            if (this.lines[i].handle > line.handle) {
-                break;
-            }
+        let i = this.lines.findIndex(l => l.handle > line.handle);
+        if (i == -1) {
+            i = this.lines.size();
         }
 
         // that becomes our insertion point, as everything at or after the index
         // just gets moved up by one
-        this.lines.splice(i, 0, line);
-        this._invalidateRenderState();
-    }
+        let newChunk = new Chunk(null);
+        newChunk.lines = this.lines.splice(i, 0, line);
 
-    updateLine(lineHandle, options) {
-        let index = this._findLineIndex(lineHandle);
-        this.lines[index].update(options);
-
-        this._invalidateRenderState();
-    }
-
-    removeLine(lineHandle) {
-        let index = this._findLineIndex(lineHandle);
-        this.lines.splice(index, 1);
-        this._invalidateRenderState();
+        return newChunk;
     }
 
     isFull() {
         return this.lines.length == Chunk.MAX_SIZE;
     }
 
-    // call to make sure the chunk is updated next time the renderer draws
-    _invalidateRenderState() {
-        ++this.renderStateId;
-        this.boundingBox = null;
-    }
+    boundingBox() {
+        var minX = Number.MAX_VALUE;
+        var minY = Number.MAX_VALUE;
+        var maxX = Number.MIN_VALUE;
+        var maxY = Number.MIN_VALUE;
 
-    _getBoundingBox() {
-        if (this.boundingBox == null) {
-            let minX = this.lines[0].x1;
-            let minY = this.lines[0].y1;
-            let maxX = minX;
-            let maxY = minY;
+        this.lines.forEach(function (line) {
+            minX = Math.min(line.p1.x, minX);
+            minX = Math.min(line.p2.x, minX);
+            minY = Math.min(line.p1.y, minY);
+            minY = Math.min(line.p2.y, minY);
 
-            for (let line of this.lines) {
-                minX = Math.min(minX, line.x1);
-                minX = Math.min(minX, line.x2);
-                maxX = Math.max(maxX, line.x1);
-                maxX = Math.max(maxX, line.x2);
+            maxX = Math.max(line.p1.x, maxX);
+            maxX = Math.max(line.p2.x, maxX);
+            maxY = Math.max(line.p1.y, maxY);
+            maxY = Math.max(line.p2.y, maxY);
+        });
 
-                minY = Math.min(minY, line.y1);
-                minY = Math.min(minY, line.y2);
-                maxY = Math.max(maxY, line.y1);
-                maxY = Math.max(maxY, line.y2);
-            }
-
-            this.boundingBox = {
-                x: minX,
-                y: minY,
-                width: maxX - minX,
-                height: maxY - minY
-            };
-        }
-
-        return this.boundingBox;
-    }
-
-    _findLineIndex(handle) {
-        // TODO: use binary search
-        return this.lines.findIndex(l => l.handle == handle);
+        return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
     }
 }
 

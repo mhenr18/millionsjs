@@ -1,18 +1,12 @@
 
 export default class Line {
-    constructor(options) {
-        this.setOptions(options);
+    constructor(p1, p2) {
+        this.setOptions(p1, p2);
     }
 
-    setOptions(options) {
-        this.x1 = options.p1.x;
-        this.y1 = options.p1.y;
-        this.x2 = options.p2.x;
-        this.y2 = options.p2.y;
-        this.color = options.color;
-        this.thickness = options.thickness;
-        this.cap1 = options.p1.capStyle;
-        this.cap2 = options.p2.capStyle;
+    setOptions(p1, p2) {
+        this.p1 = p1;
+        this.p2 = p2;
     }
 }
 

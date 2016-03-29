@@ -1,24 +1,33 @@
 const utils = require('./WebGLUtils');
 const ChunkBufferManager = require('./WebGLChunkBufferManager');
 
-export default class WebGLRenderer {
+export default class WebGL1Renderer {
     constructor(canvas) {
-        this.gl = canvas.getContext("experimental-webgl", {
-            premultipliedAlpha: false
-        });
+        var opts = {
+            premultipliedAlpha: false,
+            alpha: false
+        };
+
+        this.gl = canvas.getContext('webgl', opts) || canvas.getContext('experimental-webgl', opts);
 
         this.prevCanvasWidth = null;
         this.prevCanvasHeight = null;
         this.uniforms = {};
         this.attributes = {};
         this.chunkBufferManager = new ChunkBufferManager(this.gl);
+        this.pixelDensity = 2;
 
         this._setupWebGL();
     }
 
-    render(chunks, pixelDensity, bgColor, focalPoint, zoom) {
+    render(scene, camera) {
         const gl = this.gl;
         const canvas = gl.canvas;
+        const bgColor = scene.bgColor;
+        const focalPoint = { x: camera.focalX, y: camera.focalY };
+        const zoom = camera.zoom;
+        const pixelDensity = this.pixelDensity;
+
         this._updateViewport(pixelDensity);
 
         gl.viewport(0, 0, canvas.width, canvas.height);
@@ -34,12 +43,20 @@ export default class WebGLRenderer {
         gl.uniform1f(this.uniforms.zoom, zoom);
         gl.uniform1f(this.uniforms.pixelDensity, pixelDensity);
 
+        // direct access to Immy - TODO: use a public API
+        scene.chunks.__getBuffer();
+        var chunks = scene.chunks.buffer;
         for (let i = 0; i < chunks.length; ++i) {
             let chunk = chunks[i];
             this._renderChunk(chunk, chunks.slice(i + 1));
         }
 
         gl.useProgram(null);
+    }
+
+    aspectRatio() {
+        this._updateViewport(this.pixelDensity);
+        return this.canvas.width / this.canvas.height;
     }
 
     _setupWebGL() {
@@ -101,3 +118,18 @@ export default class WebGLRenderer {
         gl.drawElements(gl.TRIANGLES, buffer.numIndices, gl.UNSIGNED_SHORT, 0);
     }
 }
+
+WebGL1Renderer.isSupported = function () {
+    try {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+        if (ctx == null) {
+            return false;
+        }
+
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
