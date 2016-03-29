@@ -56,7 +56,7 @@ export default class WebGL1Renderer {
 
     aspectRatio() {
         this._updateViewport(this.pixelDensity);
-        return this.canvas.width / this.canvas.height;
+        return this.gl.canvas.width / this.gl.canvas.height;
     }
 
     _setupWebGL() {
