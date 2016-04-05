@@ -14,8 +14,8 @@ class ChunkBuffer {
 
     allocate(gl) {
         try {
-            const vboDataSize = Chunk.MAX_SIZE * 8 * 24;
-            const iboDataSize = Chunk.MAX_SIZE * 18 * 2;
+            const vboDataSize = WebGLChunkBufferManager.NUM_VERTS * 24;
+            const iboDataSize = WebGLChunkBufferManager.NUM_INDICES * 2;
 
             this.vbo = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
@@ -191,5 +191,14 @@ export default class WebGLChunkBufferManager {
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, new Uint8Array(buffer.iboData, 0, buffer.numIndices * 2));
     }
 }
+
+// num verts is set to 65536 because indices are only 16 bit, thus limiting any
+// given index buffer from referencing more than 65536 individual verts. the
+// index buffer size is set based on a wildly optimistic assumption that all
+// triangles will be perfectly stripped.
+//
+// we might either lower this or make it dynamically adapt.
+WebGLChunkBufferManager.NUM_VERTS = 65536;
+WebGLChunkBufferManager.NUM_INDICES = 65536 * 3;
 
 WebGLChunkBufferManager.MAX_BUFFERS = 256;

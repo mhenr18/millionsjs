@@ -2,8 +2,31 @@ var Immy = require('immy');
 
 export default class Chunk {
 
-    constructor (firstLine) {
+    constructor (firstLine, costFunc) {
+        if (costFunc == null) {
+            costFunc = function () { return [0]; }
+        }
+
         this.lines = new Immy.List([firstLine]);
+        this.costFunc = costFunc;
+    }
+
+    costs() {
+        var totalCosts = [];
+
+        this.lines.forEach(function (line) {
+            var lineCosts = this.costFunc(line);
+
+            while (lineCosts.length > totalCosts.length) {
+                totalCosts.push(0);
+            }
+
+            for (let i = 0; i < lineCosts.length; ++i) {
+                totalCosts[i] += lineCosts[i];
+            }
+        });
+
+        return totalCosts;
     }
 
     split() {
@@ -14,10 +37,10 @@ export default class Chunk {
         let beginA = 0;
         let beginB = (this.size() / 2) | 0;
 
-        let a = new Chunk(null);
+        let a = new Chunk(null, this.costFunc);
         a.lines = this.lines.slice(0, beginB);
 
-        let b = new Chunk(null);
+        let b = new Chunk(null, this.costFunc);
         b.lines = this.lines.slice(beginB, this.size());
 
         return [a, b];
@@ -37,7 +60,7 @@ export default class Chunk {
 
     // fast path just for inserting lines we know will sit at the end
     withLineAppended(line) {
-        let newChunk = new Chunk(null);
+        let newChunk = new Chunk(null, this.costFunc);
         newChunk.lines = this.lines.push(line);
         return newChunk;
     }
@@ -52,14 +75,10 @@ export default class Chunk {
 
         // that becomes our insertion point, as everything at or after the index
         // just gets moved up by one
-        let newChunk = new Chunk(null);
+        let newChunk = new Chunk(null, this.costFunc);
         newChunk.lines = this.lines.splice(i, 0, line);
 
         return newChunk;
-    }
-
-    isFull() {
-        return this.lines.length == Chunk.MAX_SIZE;
     }
 
     boundingBox() {
@@ -88,5 +107,3 @@ export default class Chunk {
         };
     }
 }
-
-Chunk.MAX_SIZE = 8192;

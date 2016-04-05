@@ -2,6 +2,7 @@ exports.Color = require('./Color');
 exports.Scene = require('./Scene');
 exports.Camera = require('./Camera');
 exports.WebGL1Renderer = require('./WebGL1Renderer');
+exports.LineCaps = require('./LineCaps');
 
 exports.createRenderer = function (mountPoint) {
     var rendererClass = exports.getBestSupportedRenderer();
