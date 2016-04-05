@@ -1,8 +1,6 @@
 var geom = require('./geom');
 
-// cameras map scene coordinates into homogenous coordinates. they are aspect
-// aware because that's needed to keep things looking correct when you ask for a
-// whole scene to be in frame (unless you're into distorted views...).
+// cameras map scene coordinates into homogenous coordinates.
 //
 // cameras are restricted to being transformations of set parameters rather than
 // just being a light wrapper around a fully flexible transformation matrix. this
@@ -12,8 +10,6 @@ var geom = require('./geom');
 //  - focal point (XY)
 //  - zoom
 //  - rotation
-//  - aspect ratio (where an aspect ratio of 1.5 means you need to display the
-//    output 150% as wide as it is high in order to get an undistorted view)
 //
 // note that because we're mapping to homogenous coordinates, the zoom parameter
 // will end up being a rather small value in practice as zoom = 1 means that the
@@ -24,20 +20,24 @@ var geom = require('./geom');
 // cameras produce the same mapping regardless of output frame size. this means
 // that doubling the size of the output framebuffer will just double the size of
 // the content, rather than showing more content around the edges.
+//
+// also note that cameras *are* aspect ratio correct - you aren't allowed to
+// actually access parameter values because some of them need to be late bound in
+// the renderer (i.e if you don't know the aspect ratio of the renderer you can't
+// figure out how far you'd have to zoom in/out to fit the area in frame, and you
+// can't access the aspect ratio if you're using a React component.
 
 export default class Camera {
-    constructor(focalX = 0, focalY = 0, zoom = 1, rotation = 0, aspect = 1) {
+    constructor(focalX = 0, focalY = 0, zoom = 1, rotation = 0) {
         console.log('hello camera');
         this.focalX = focalX;
         this.focalY = focalY;
         this.zoom = zoom;
         this.rotation = rotation;
-        this.aspect = aspect;
     }
 
     __clone() {
-        return new Camera(this.focalX, this.focalY, this.zoom, this.rotation,
-            this.aspect);
+        return new Camera(this.focalX, this.focalY, this.zoom, this.rotation);
     }
 
     withRectangleInFrame(rect) {
@@ -54,5 +54,18 @@ export default class Camera {
         cpy.aspect = aspect;
 
         return cpy;
+    }
+
+    withFocalPoint(x, y) {
+        return Object.assign(this.__clone(), {
+            focalX: x,
+            focalY: y
+        });
+    }
+
+    withZoom(zoom) {
+        return Object.assign(this.__clone(), {
+            zoom: zoom
+        });
     }
 }

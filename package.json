@@ -1,6 +1,6 @@
 {
   "name": "millions",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Renderer for millions of lines",
   "main": "lib/millions.min.js",
   "scripts": {

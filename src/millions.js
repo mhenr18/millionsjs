@@ -4,9 +4,14 @@ exports.Camera = require('./Camera');
 exports.WebGL1Renderer = require('./WebGL1Renderer');
 
 exports.createRenderer = function (mountPoint) {
+    var rendererClass = exports.getBestSupportedRenderer();
+    return new rendererClass(mountPoint);
+};
+
+exports.getBestSupportedRenderer = function () {
     if (exports.WebGL1Renderer.isSupported()) {
-        return new exports.WebGL1Renderer(mountPoint);
+        return exports.WebGL1Renderer;
     }
 
-    throw new Error('unable to create a renderer -- nothing is supported by your browser');
+    throw new Error('no renderer is supported by your browser');
 };
