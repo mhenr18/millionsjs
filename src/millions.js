@@ -1,8 +1,10 @@
 exports.Color = require('./Color');
-exports.Scene = require('./Scene');
+exports.Scene = require('./entities/Scene');
+exports.Line = require('./entities/Line');
+exports.Triangle = require('./entities/Triangle');
 exports.Camera = require('./Camera');
-exports.WebGL1Renderer = require('./WebGL1Renderer');
-exports.LineCaps = require('./LineCaps');
+exports.WebGL1Renderer = require('./webgl/webgl1/WebGL1Renderer');
+exports.LineCaps = require('./entities/LineCaps');
 
 exports.createRenderer = function (mountPoint) {
     var rendererClass = exports.getBestSupportedRenderer();

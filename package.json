@@ -47,7 +47,7 @@
     "babel-polyfill": "~6.5",
     "babel-runtime": "~6.5",
     "csscolorparser": "^1.0.2",
-    "immy": "^0.2.1",
+    "immy": "file:/users/matt/code/immy",
     "query-string": "^3.0.0"
   }
 }

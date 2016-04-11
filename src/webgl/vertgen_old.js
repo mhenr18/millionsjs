@@ -1,5 +1,6 @@
-var LineCaps = require('./LineCaps');
-var Color = require('./Color');
+var LineCaps = require('../entities/LineCaps');
+var Line = require('../entities/Line');
+var Color = require('../Color');
 
 //
 //
@@ -53,12 +54,13 @@ function genCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices) {
     }
 }
 
-function genArrowCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices) {
-    // generate all 3 vertices as v1 and v2 have their line position set to the
-    // actual line position, which will cause curved antialiasing
+function genArrowCap(point, aaFactor, ux, uy, _1, _2, pushVert, pushIndices) {
     var x = point.x;
     var y = point.y;
     var radius = point.thickness / 2;
+
+    var rx = -uy;
+    var ry = ux;
 
     ux *= point.cap.lengthScale;
     uy *= point.cap.lengthScale;
@@ -66,6 +68,12 @@ function genArrowCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices) {
     //     2
     //  3
     //     1
+
+    var v1i = pushVert(x - rx * aaFactor, y - ry * aaFactor,
+                       x - rx, y - ry, 0, point.color);
+
+    var v2i = pushVert(x + rx * aaFactor, y + ry * aaFactor,
+                       x + rx, y + ry, 0, point.color);
 
     var v3i = pushVert(x + ux * aaFactor, y + uy * aaFactor,
                        x + ux, y + uy, 0, point.color);
@@ -125,7 +133,7 @@ function genRoundedCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices)
     );
 }
 
-export function genLine(line, pushVert, pushIndices) {
+function genLine(line, pushVert, pushIndices) {
     const x1 = line.p1.x, y1 = line.p1.y,
           x2 = line.p2.x, y2 = line.p2.y;
 
@@ -141,7 +149,7 @@ export function genLine(line, pushVert, pushIndices) {
     const radius1 = line.p1.thickness / 2,
           radius2 = line.p2.thickness / 2;
 
-    const aaFactor = 2;
+    const aaFactor = 3;
 
     // when we make the unit vector, make it a "line unit" where it's
     // half as long as the line's thickness at that endpoint
@@ -172,4 +180,33 @@ export function genLine(line, pushVert, pushIndices) {
     // now we can look at the endcaps
     genCap(line.p1, aaFactor, -u1x / aaFactor, -u1y / aaFactor, v1i, v4i, pushVert, pushIndices);
     genCap(line.p2, aaFactor, u2x / aaFactor, u2y / aaFactor, v3i, v2i, pushVert, pushIndices);
+}
+
+// TODO: optimize this so we don't actually have to vertgen each time
+export function costOf(entity) {
+    var numVerts = 0;
+    var numIndices = 0;
+
+    function pushVert() {
+        return numVerts++;
+    }
+
+    function pushIndices() {
+        numIndices += arguments.length;
+    }
+
+    generate(entity, pushVert, pushIndices);
+
+    return {
+        verts: numVerts,
+        indices: numIndices
+    };
+}
+
+export function generate(entity, pushVert, pushIndices) {
+    if (entity instanceof Line) {
+        genLine(entity, pushVert, pushIndices);
+    } else {
+        throw new Error("don't know about this entity type");
+    }
 }
