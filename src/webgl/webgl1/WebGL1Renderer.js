@@ -28,13 +28,13 @@ export default class WebGL1Renderer {
     }
 
     getBufferRegionForZIndex(zIndex) {
-        for (var i = 0; i < this.bufferRegions.length; ++i) {
-            if (this.bufferRegions[i].minIndex <= zIndex) {
+        for (var i = 0; i < this.bufferRegions.length - 1; ++i) {
+            if (this.bufferRegions[i].minIndex <= zIndex && zIndex < this.bufferRegions[i + 1].minIndex) {
                 return this.bufferRegions[i];
             }
         }
 
-        throw new Error('this is impossible');
+        return this.bufferRegions[i];
     }
 
     render(scene, camera) {
@@ -61,13 +61,10 @@ export default class WebGL1Renderer {
         gl.uniform1f(this.uniforms.zoom, zoom);
         gl.uniform1f(this.uniforms.pixelDensity, pixelDensity);
 
+
+
         // mark buffers that need updates
-        var diff = this.prevScene.compareTo(scene, {
-            ordered: true,
-            comparison: function (a, b) {
-                return a.zIndex - b.zIndex;
-            }
-        });
+        var diff = this.prevScene.compareTo(scene);
 
         diff.forEachPrimitive((primOp) => {
             this.getBufferRegionForZIndex(primOp.value.zIndex).mark();
@@ -97,12 +94,13 @@ export default class WebGL1Renderer {
             var endIndex = (i < this.bufferRegions.length - 1) ? this.bufferRegions[i + 1].minIndex : Number.MAX_VALUE;
             var extraRegions = this._renderRegion(this.bufferRegions[i], endIndex, scene);
 
-            if (extraRegions != null && extraRegions != []) {
-                this.bufferRegions.splice(i + 1, 0, extraRegions);
+            if (extraRegions != null && extraRegions.length != 0) {
+                Array.prototype.splice.apply(this.bufferRegions, [i + 1, 0].concat(extraRegions));
             }
         }
 
         gl.useProgram(null);
+        this.prevScene = scene;
     }
 
     aspectRatio() {

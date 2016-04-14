@@ -6,6 +6,26 @@ export default class Line {
         this.zIndex = zIndex;
     }
 
+    equals(rhs) {
+        if (this == rhs) {
+            return true;
+        }
+
+        if (!(rhs instanceof Line)) {
+            return false;
+        }
+
+        return this.zIndex == rhs.zIndex
+            && this.p1.x == rhs.p1.x
+            && this.p1.y == rhs.p1.y
+            && this.p2.x == rhs.p2.x
+            && this.p2.y == rhs.p2.y
+            && this.p1.thickness == rhs.p1.thickness
+            && this.p2.thickness == rhs.p2.thickness
+            && this.p1.color.equals(rhs.p1.color)
+            && this.p2.color.equals(rhs.p2.color);
+    }
+
     boundingBox() {
         var x, y, width, height;
 

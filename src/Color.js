@@ -15,6 +15,18 @@ export default class Color {
         this.b = b;
         this.a = a;
     }
+
+    equals(rhs) {
+        if (this == rhs) {
+            return true;
+        }
+
+        if (!(rhs instanceof Color)) {
+            return false;
+        }
+
+        return this.r == rhs.r && this.g == rhs.g && this.b == rhs.b && this.a == rhs.a;
+    }
 }
 
 Color.Transparent = new Color(0, 0, 0, 0);

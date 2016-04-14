@@ -100,6 +100,34 @@ export default class Scene {
         });
     }
 
+    // returns a new scene with everything in between the half open range
+    // [zBegin, zEnd) removed. (half open means that anything with a zIndex
+    // equal to zEnd will *not* be removed, but anything equal to zBegin *will*
+    // be removed)
+    withEntitiesInZIndexRangeRemoved(zBegin, zEnd) {
+        // find our starting index
+        var beginIndex = this.entities.findInsertionIndexWithBinarySearch(function (existing) {
+            return existing.zIndex - zBegin;
+        });
+
+        // beginIndex might be slightly ahead, seek back until we know it's not
+        while (beginIndex > 0 && this.entities.get(beginIndex - 1).zIndex >= zBegin) {
+            --beginIndex;
+        }
+
+        // now just seek forward and remove
+        var numRemoved = 0;
+        var entities = this.entities;
+        while (beginIndex < entities.size() && entities.get(beginIndex).zIndex < zEnd) {
+            entities = entities.withValueRemoved(beginIndex);
+            ++numRemoved;
+        }
+
+        return Object.assign(this.__clone(), {
+            entities: entities
+        });
+    }
+
     // returns a ListPatch, but you should ignore the indexes and just care about
     // the values and whether they're added or removed
     //
@@ -108,17 +136,17 @@ export default class Scene {
         return this.entities.compareTo(otherScene.entities, {
             ordered: true,
             comparison: function (a, b) {
-                if (a == b) {
+                if (a.equals(b)) {
                     return 0;
+                } else {
+                    if (a.zIndex == b.zIndex) {
+                        // same z index but we aren't equal, return null for a
+                        // replacement
+                        return null;
+                    } else {
+                        return a.zIndex - b.zIndex;
+                    }
                 }
-
-                if (a.zIndex == b.zIndex) {
-                    // same z index, different entities.
-                    // return null to replace this
-                    return null;
-                }
-
-                return a.zIndex - b.zIndex;
             }
         });
     }

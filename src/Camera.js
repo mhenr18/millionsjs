@@ -29,7 +29,6 @@ var geom = require('./geom');
 
 export default class Camera {
     constructor(focalX = 0, focalY = 0, zoom = 1, rotation = 0) {
-        console.log('hello camera');
         this.focalX = focalX;
         this.focalY = focalY;
         this.zoom = zoom;
