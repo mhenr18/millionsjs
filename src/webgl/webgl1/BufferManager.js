@@ -1,7 +1,7 @@
 let BufferRegion = require('./BufferRegion');
 let vertgen = require('../vertgen');
 
-const VERTEX_SIZE_BYTES = 32;
+const VERTEX_SIZE_BYTES = 24;
 
 class Buffer {
     constructor(gl) {
@@ -130,7 +130,10 @@ export default class BufferManager {
     _vertGenBuffer(buffer, region, endIndex, entities) {
         const gl = this.gl;
         const vboFloatView = new Float32Array(buffer.vboData);
-        const vboByteView = new Uint8Array(buffer.vboData);
+        const vboUint8View = new Uint8Array(buffer.vboData);
+        const vboInt8View = new Int8Array(buffer.vboData);
+        const vboUint16View = new Uint16Array(buffer.vboData);
+        const vboInt16View = new Int16Array(buffer.vboData);
         const iboUint16View = new Uint16Array(buffer.iboData);
 
         buffer.numVerts = 0;
@@ -140,27 +143,28 @@ export default class BufferManager {
             throw new Error('vertex size must be a multiple of float size');
         }
 
-        let pushVert = (x, y, rx, ry, r, nx, ny, bi, bu, color) => {
-            console.log('pushing pos: ' + x + ', ' + y + ', norm: ' + nx + ', ' + ny + ', baryIndex: ' + bi + ', baryUnit: ' + bu);
-
+        let pushVert = (x, y, rx, ry, r, nx, ny, baryIndex, baryUnitLength, color) => {
             const floatBase = (VERTEX_SIZE_BYTES / 4) * buffer.numVerts;
             const byteBase = VERTEX_SIZE_BYTES * buffer.numVerts;
+            const shortBase = (VERTEX_SIZE_BYTES / 2) * buffer.numVerts;
+
+            var drx = rx - x;
+            var dry = ry - y;
 
             vboFloatView[floatBase] = x;
             vboFloatView[floatBase + 1] = y;
-            vboFloatView[floatBase + 2] = bu;
-            vboFloatView[floatBase + 3] = rx;
-            vboFloatView[floatBase + 4] = ry;
-            vboFloatView[floatBase + 5] = r;
-            vboByteView[byteBase + 24] = color.r;
-            vboByteView[byteBase + 25] = color.g;
-            vboByteView[byteBase + 26] = color.b;
-            vboByteView[byteBase + 27] = color.a;
-            vboByteView[byteBase + 28] = Math.round(nx * 127);
-            vboByteView[byteBase + 29] = Math.round(ny * 127);
-            vboByteView[byteBase + 30] = bi;
-            vboByteView[byteBase + 31] = 0; // unused so far
-
+            vboInt16View[shortBase + 4] = Math.round((drx / 512) * 32767);
+            vboInt16View[shortBase + 5] = Math.round((dry / 512) * 32767);
+            vboUint16View[shortBase + 6] = Math.round((baryUnitLength / 1024) * 65535);
+            vboUint8View[byteBase + 14] = baryIndex;
+            vboUint8View[byteBase + 15] = 0;
+            vboUint16View[shortBase + 8] = Math.round((r / 1024) * 65535);
+            vboInt8View[byteBase + 18] = Math.round((nx / 2) * 127);
+            vboInt8View[byteBase + 19] = Math.round((ny / 2) * 127);
+            vboUint8View[byteBase + 20] = color.r;
+            vboUint8View[byteBase + 21] = color.g;
+            vboUint8View[byteBase + 22] = color.b;
+            vboUint8View[byteBase + 23] = color.a;
 
             return buffer.numVerts++;
         };

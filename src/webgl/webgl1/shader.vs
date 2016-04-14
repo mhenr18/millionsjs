@@ -1,14 +1,14 @@
 precision highp float;
 
-const float AA_PIXELS = 1.5;
+const float AA_PIXELS = 2.0;
 
 attribute vec2 pos;
-attribute vec2 norm;
-attribute float baryIndex;
-attribute float baryUnit;
 attribute vec4 color;
 attribute float radius;
-attribute vec2 rpos;
+attribute vec2 drpos;
+attribute vec2 norm;
+attribute float baryIndex;
+attribute float baryUnitLengthNormalised;
 
 uniform vec2 frameSize;
 uniform vec2 focalPoint;
@@ -16,11 +16,10 @@ uniform float zoom;
 uniform float pixelDensity;
 
 varying vec4 colorToFrag;
-varying vec3 baryToFrag;
-varying float baryExtensionToFrag;
-varying float baryFracPerPixel;
 varying float radiusToFrag;
 varying vec2 radialPosToFrag;
+varying vec3 baryPosToFrag;
+varying float baryFracPerPixel;
 
 vec2 translatePos(vec2 p)
 {
@@ -47,32 +46,35 @@ vec2 translatePosToFrag(vec2 p)
 
 void main()
 {
-    vec2 tpos = pos;
-    float baryExtension = 0.0;
-
-    if (baryUnit != 0.0) {
-        baryFracPerPixel = (1.0 / (zoom * pixelDensity)) / baryUnit;
-        baryExtension = 100.0 * baryFracPerPixel;
-        tpos = pos + (baryExtension * norm * baryUnit);
-    }
-
-    vec3 baryPos = vec3(-baryExtension / 2.0, -baryExtension / 2.0, -baryExtension / 2.0);
-
-    // TODO: make this branchless by taking advantage of baryIndexes being prime
-    if (baryIndex == 2.0) {
-        baryPos.x = 1.0 + baryExtension;
-    } else if (baryIndex == 3.0) {
-        baryPos.y = 1.0 + baryExtension;
-    } else {
-        // baryIndex == 5
-        baryPos.z = 1.0 + baryExtension;
-    }
+    vec2 rpos = pos + (drpos * 512.0);
+    vec2 trueNorm = norm * 2.0;
+    vec2 pixelNorm = trueNorm / (zoom * pixelDensity);
+    float baryUnitLength = baryUnitLengthNormalised * 1024.0;
+    float extensionPixels = AA_PIXELS + 2.0;
 
     colorToFrag = color;
-    baryToFrag = baryPos;
-    baryExtensionToFrag = baryExtension;
-    radiusToFrag = radius * zoom * pixelDensity;
+    radiusToFrag = radius * 1024.0 * zoom * pixelDensity;
     radialPosToFrag = translatePosToFrag(rpos);
 
-    gl_Position = vec4(translatePos(tpos), 1.0, 1.0);
+    if (radius == 0.0) {
+        // HACK - I honestly have no clue why we need this...
+        extensionPixels *= 2.0;
+
+        // how long is a pixel in multiples of a bary unit?
+        baryFracPerPixel = (1.0 / (zoom * pixelDensity)) / baryUnitLength;
+
+        // because the bary extension is extensionPixels * that frac
+        float baryExtension = extensionPixels * baryFracPerPixel;
+        baryPosToFrag = vec3(-baryExtension / 2.0, -baryExtension / 2.0, -baryExtension / 2.0);
+
+        if (baryIndex == 2.0) {
+            baryPosToFrag.x = 1.0 + baryExtension;
+        } else if (baryIndex == 3.0) {
+            baryPosToFrag.y = 1.0 + baryExtension;
+        } else {
+            baryPosToFrag.z = 1.0 + baryExtension;
+        }
+    }
+
+    gl_Position = vec4(translatePos(pos + pixelNorm * extensionPixels), 1.0, 1.0);
 }

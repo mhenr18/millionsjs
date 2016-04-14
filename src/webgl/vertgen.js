@@ -62,21 +62,21 @@ function getBarycentricDistance(p, a, b) {
 
 // capgen shouldn't push more than two verts and 6 indices
 
-function genCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices) {
+function genCap(point, ux, uy, v1i, v2i, pushVert, pushIndices) {
     if (!point.cap) {
-        genRoundedCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices);
+        genRoundedCap(point, ux, uy, v1i, v2i, pushVert, pushIndices);
     } else {
         switch (point.cap.type) {
             case LineCaps.LINECAP_TYPE_ARROW:
-                genArrowCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices);
+                genArrowCap(point, ux, uy, v1i, v2i, pushVert, pushIndices);
                 break;
 
             case LineCaps.LINECAP_TYPE_ROUNDED:
-                genRoundedCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices);
+                genRoundedCap(point, ux, uy, v1i, v2i, pushVert, pushIndices);
                 break;
 
             case LineCaps.LINECAP_TYPE_HALF_ARROW_A:
-                genHalfArrowCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices);
+                genHalfArrowACap(point, ux, uy, v1i, v2i, pushVert, pushIndices);
                 break;
 
             default:
@@ -86,76 +86,40 @@ function genCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices) {
     }
 }
 
-function genRoundedCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices) {
+function genRoundedCap(point, ux, uy, v1i, v2i, pushVert, pushIndices) {
     var x = point.x;
     var y = point.y;
-
-    ux *= aaFactor;
-    uy *= aaFactor;
 
     var rx = -uy;
     var ry = ux;
     var radius = point.thickness / 2;
+
+    // this normal is special because it's not a unit normal. it's designed
+    // to be a unit out both in the direction of the line normals, and also in
+    // the direction of the line. (i.e its length is not 1, but sqrt(2))
+    var n3x = ux + rx;
+    var n3y = uy + ry;
+    var n3len = Math.sqrt(n3x*n3x + n3y*n3y);
+    n3x = (n3x / n3len) * 1.414213;
+    n3y = (n3y / n3len) * 1.414213;
+
+    var n4x = ux - rx;
+    var n4y = uy - ry;
+    var n4len = Math.sqrt(n4x*n4x + n4y*n4y);
+    n4x = (n4x / n4len) * 1.414213;
+    n4y = (n4y / n4len) * 1.414213;
 
     //  3  2
     //
     //  4  1
 
-    var v3i = pushVert(x + ux + rx, y + uy + ry, x, y, radius, 0, 0, 0, 0, point.color);
-    var v4i = pushVert(x + ux - rx, y + uy - ry, x, y, radius, 0, 0, 0, 0, point.color);
+    var v3i = pushVert(x + ux + rx, y + uy + ry, x, y, radius, n3x, n3y, 0, 0, point.color);
+    var v4i = pushVert(x + ux - rx, y + uy - ry, x, y, radius, n4x, n4y, 0, 0, point.color);
 
     pushIndices(
         v4i, v1i, v2i,
         v4i, v2i, v3i
     );
-}
-
-function genArrowCap(point, aaFactor, ux, uy, v1i, v2i, pushVert, pushIndices) {
-    var x = point.x;
-    var y = point.y;
-    var radius = point.thickness / 2;
-
-    var rx = -uy;
-    var ry = ux;
-
-    ux *= point.cap.lengthScale;
-    uy *= point.cap.lengthScale;
-
-    //     2
-    //  3
-    //     1
-
-    var p1 = {
-        x: x - rx,
-        y: y - ry
-    };
-
-    var p2 = {
-        x: x + rx,
-        y: y + ry
-    };
-
-    var p3 = {
-        x: x + ux,
-        y: y + uy
-    };
-
-    var nx = rx / radius;
-    var ny = ry / radius;
-
-    var n1 = getOutwardNormal(p1, p2, p3);
-    var n2 = getOutwardNormal(p2, p3, p1);
-    var n3 = getOutwardNormal(p3, p1, p2);
-
-    var bu1 = getBarycentricDistance(p1, p2, p3);
-    var bu2 = getBarycentricDistance(p2, p3, p1);
-    var bu3 = getBarycentricDistance(p3, p1, p2);
-
-    var v1i = pushVert(p1.x, p1.y, 0, 0, 0, n1.x, n1.y, 2, bu1, point.color);
-    var v2i = pushVert(p2.x, p2.y, 0, 0, 0, n2.x, n2.y, 3, bu2, point.color);
-    var v3i = pushVert(p3.x, p3.y, 0, 0, 0, n3.x, n3.y, 5, bu3, point.color);
-
-    pushIndices(v1i, v2i, v3i);
 }
 
 function genLine(line, pushVert, pushIndices) {
@@ -174,14 +138,12 @@ function genLine(line, pushVert, pushIndices) {
     const radius1 = line.p1.thickness / 2,
           radius2 = line.p2.thickness / 2;
 
-    const aaFactor = 3;
-
     // when we make the unit vector, make it a "line unit" where it's
     // half as long as the line's thickness at that endpoint
-    const u1x = (dx / length) * radius1 * aaFactor,
-          u1y = (dy / length) * radius1 * aaFactor,
-          u2x = (dx / length) * radius2 * aaFactor,
-          u2y = (dy / length) * radius2 * aaFactor;
+    const u1x = (dx / length) * radius1,
+          u1y = (dy / length) * radius1,
+          u2x = (dx / length) * radius2,
+          u2y = (dy / length) * radius2;
 
     // rotate it to be normal to the line segment
     const r1x = -u1y,
@@ -189,33 +151,15 @@ function genLine(line, pushVert, pushIndices) {
           r2x = -u2y,
           r2y = u2x;
 
-    // with these four points, we can add/subtract the rotated unit
-    // vector to get the vertex positions. we push the core vertex positions and
-    // their indices.
+    var n1x = r1x / radius1,
+        n1y = r1y / radius1,
+        n2x = r2x / radius2,
+        n2y = r2y / radius2;
 
-    //var n1x = r1x / (radius1 * aaFactor),
-    //    n1y = r1y / (radius1 * aaFactor),
-    //    n2x = r2x / (radius2 * aaFactor),
-    //    n2y = r2y / (radius2 * aaFactor);
-//
-    //var p1 = {x: x1 + r1x, y: y1 + r1y};
-    //var p2 = {x: x2 + r2x, y: y2 + r2y};
-    //var p3 = {x: x2 - r2x, y: y2 - r2y};
-    //var p4 = {x: x1 - r1x, y: y1 - r1y};
-//
-    //var bu1 = getBarycentricDistance(p1, p3, p4);
-    //var bu2 = getBarycentricDistance(p3, p4, p1);
-    //var bu3 = getBarycentricDistance(p4, p1, p3);
-//
-    //const v1i = pushVert(x1 + r1x, y1 + r1y, 0, 0, 0, n1x, n1y, 2, bu1, line.p1.color);
-    //const v2i = pushVert(x2 + r2x, y2 + r2y, 0, 0, 0, n2x, n2y, 5, bu3, line.p2.color);
-    //const v3i = pushVert(x2 - r2x, y2 - r2y, 0, 0, 0, -n2x, -n2y, 3, bu2, line.p2.color);
-    //const v4i = pushVert(x1 - r1x, y1 - r1y, 0, 0, 0, -n1x, -n1y, 5, bu3, line.p1.color);
-
-    const v1i = pushVert(x1 + r1x, y1 + r1y, x1, y1, radius1, 0, 0, 0, 0, line.p1.color),
-          v2i = pushVert(x2 + r2x, y2 + r2y, x2, y2, radius2, 0, 0, 0, 0, line.p2.color),
-          v3i = pushVert(x2 - r2x, y2 - r2y, x2, y2, radius2, 0, 0, 0, 0, line.p2.color),
-          v4i = pushVert(x1 - r1x, y1 - r1y, x1, y1, radius1, 0, 0, 0, 0, line.p1.color);
+    const v1i = pushVert(x1 + r1x, y1 + r1y, x1, y1, radius1, n1x, n1y, 0, 0, line.p1.color),
+          v2i = pushVert(x2 + r2x, y2 + r2y, x2, y2, radius2, n2x, n2y, 0, 0, line.p2.color),
+          v3i = pushVert(x2 - r2x, y2 - r2y, x2, y2, radius2, -n2x, -n2y, 0, 0, line.p2.color),
+          v4i = pushVert(x1 - r1x, y1 - r1y, x1, y1, radius1, -n1x, -n1y, 0, 0, line.p1.color);
 
     pushIndices(
         v1i, v2i, v3i,
@@ -223,8 +167,8 @@ function genLine(line, pushVert, pushIndices) {
     );
 
     // now we can look at the endcaps
-    genCap(line.p1, aaFactor, -u1x / aaFactor, -u1y / aaFactor, v1i, v4i, pushVert, pushIndices);
-    genCap(line.p2, aaFactor, u2x / aaFactor, u2y / aaFactor, v3i, v2i, pushVert, pushIndices);
+    genCap(line.p1, -u1x, -u1y, v1i, v4i, pushVert, pushIndices);
+    genCap(line.p2, u2x, u2y, v3i, v2i, pushVert, pushIndices);
 }
 
 function genTriangle(triangle, pushVert, pushIndices) {
@@ -236,9 +180,9 @@ function genTriangle(triangle, pushVert, pushIndices) {
     var bu2 = getBarycentricDistance(triangle.p2, triangle.p3, triangle.p1);
     var bu3 = getBarycentricDistance(triangle.p3, triangle.p1, triangle.p2);
 
-    var v1i = pushVert(triangle.p1.x, triangle.p1.y, 0, 0, 0, n1.x, n1.y, 2, bu1, triangle.p1.color);
-    var v2i = pushVert(triangle.p2.x, triangle.p2.y, 0, 0, 0, n2.x, n2.y, 3, bu2, triangle.p2.color);
-    var v3i = pushVert(triangle.p3.x, triangle.p3.y, 0, 0, 0, n3.x, n3.y, 5, bu3, triangle.p3.color);
+    var v1i = pushVert(triangle.p1.x, triangle.p1.y, triangle.p1.x, triangle.p1.y, 0.0, n1.x, n1.y, 2, bu1, triangle.p1.color);
+    var v2i = pushVert(triangle.p2.x, triangle.p2.y, triangle.p2.x, triangle.p2.y, 0.0, n2.x, n2.y, 3, bu2, triangle.p2.color);
+    var v3i = pushVert(triangle.p3.x, triangle.p3.y, triangle.p3.x, triangle.p3.y, 0.0, n3.x, n3.y, 5, bu3, triangle.p3.color);
 
     pushIndices(v1i, v2i, v3i);
 }

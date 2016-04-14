@@ -7,7 +7,8 @@ export default class WebGL1Renderer {
     constructor(canvas) {
         var opts = {
             premultipliedAlpha: false,
-            alpha: false
+            alpha: false,
+            antialias: false
         };
 
         this.gl = canvas.getContext('webgl', opts) || canvas.getContext('experimental-webgl', opts);
@@ -116,7 +117,7 @@ export default class WebGL1Renderer {
         this.prog = utils.loadProgram(this.gl, require('raw!./shader.vs'),
                                       require('raw!./shader.fs'));
 
-        ['pos', 'rpos', 'radius', 'norm', 'baryIndex', 'baryUnit', 'color'].forEach((name) => {
+        ['pos', 'drpos', 'radius', 'norm', 'color', 'baryUnitLengthNormalised', 'baryIndex'].forEach((name) => {
             this.attributes[name] = gl.getAttribLocation(this.prog, name);
         });
 
@@ -155,24 +156,25 @@ export default class WebGL1Renderer {
         gl.enableVertexAttribArray(this.attributes.pos);
         gl.vertexAttribPointer(this.attributes.pos, 2, gl.FLOAT, false, BufferManager.VERT_SIZE, 0);
 
-        gl.enableVertexAttribArray(this.attributes.baryUnit);
-        gl.vertexAttribPointer(this.attributes.baryUnit, 1, gl.FLOAT, false, BufferManager.VERT_SIZE, 8);
+        gl.enableVertexAttribArray(this.attributes.drpos);
+        gl.vertexAttribPointer(this.attributes.drpos, 2, gl.SHORT, true, BufferManager.VERT_SIZE, 8);
 
-        gl.enableVertexAttribArray(this.attributes.rpos);
-        gl.vertexAttribPointer(this.attributes.rpos, 2, gl.FLOAT, false, BufferManager.VERT_SIZE, 12);
-
-        gl.enableVertexAttribArray(this.attributes.radius);
-        gl.vertexAttribPointer(this.attributes.radius, 1, gl.FLOAT, false, BufferManager.VERT_SIZE, 20);
-
-        gl.enableVertexAttribArray(this.attributes.color);
-        gl.vertexAttribPointer(this.attributes.color, 4, gl.UNSIGNED_BYTE, true, BufferManager.VERT_SIZE, 24);
-
-        gl.enableVertexAttribArray(this.attributes.norm);
-        gl.vertexAttribPointer(this.attributes.norm, 2, gl.BYTE, true, BufferManager.VERT_SIZE, 28);
+        gl.enableVertexAttribArray(this.attributes.baryUnitLengthNormalised);
+        gl.vertexAttribPointer(this.attributes.baryUnitLengthNormalised, 1, gl.UNSIGNED_SHORT, true, BufferManager.VERT_SIZE, 12);
 
         gl.enableVertexAttribArray(this.attributes.baryIndex);
-        gl.vertexAttribPointer(this.attributes.baryIndex, 1, gl.UNSIGNED_BYTE, false, BufferManager.VERT_SIZE, 30);
+        gl.vertexAttribPointer(this.attributes.baryIndex, 1, gl.UNSIGNED_BYTE, false, BufferManager.VERT_SIZE, 14);
 
+
+        gl.enableVertexAttribArray(this.attributes.radius);
+        gl.vertexAttribPointer(this.attributes.radius, 1, gl.UNSIGNED_SHORT, true, BufferManager.VERT_SIZE, 16);
+
+        gl.enableVertexAttribArray(this.attributes.norm);
+        gl.vertexAttribPointer(this.attributes.norm, 2, gl.BYTE, true, BufferManager.VERT_SIZE, 18);
+
+
+        gl.enableVertexAttribArray(this.attributes.color);
+        gl.vertexAttribPointer(this.attributes.color, 4, gl.UNSIGNED_BYTE, true, BufferManager.VERT_SIZE, 20);
 
 
 
