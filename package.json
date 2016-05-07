@@ -1,6 +1,6 @@
 {
   "name": "millions",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Renderer for millions of lines",
   "main": "lib/millions.min.js",
   "scripts": {
@@ -47,7 +47,7 @@
     "babel-polyfill": "~6.5",
     "babel-runtime": "~6.5",
     "csscolorparser": "^1.0.2",
-    "immy": "file:/users/matt/code/immy",
+    "immy": "0.4.0",
     "query-string": "^3.0.0"
   }
 }
